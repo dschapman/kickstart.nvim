@@ -80,6 +80,8 @@ vim.o.confirm = true
 
 vim.o.winborder = 'single'
 
+vim.opt.spell = true
+vim.opt.spelllang = 'en_us'
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -598,6 +600,14 @@ require('lazy').setup({
         -- ts_ls = {},
         --
 
+        marksman = {},
+
+        matlab_ls = {
+          settings = {
+            MATLAB = { installPath = '/Applications/MATLAB_R2025b.app' },
+          },
+        },
+
         lua_ls = {
           -- cmd = { ... },
           -- filetypes = { ... },
@@ -630,6 +640,9 @@ require('lazy').setup({
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        'prettier', -- Used to format markdown and other files
+        'markdownlint-cli2', -- Used to lint markdown files
+        'matlab_ls',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -658,7 +671,11 @@ require('lazy').setup({
       {
         '<leader>f',
         function()
-          require('conform').format { async = true, lsp_format = 'fallback' }
+          require('conform').format {
+            async = true,
+            timeout_ms = 4000,
+            lsp_format = 'fallback',
+          }
         end,
         mode = '',
         desc = '[F]ormat buffer',
@@ -671,17 +688,20 @@ require('lazy').setup({
         -- have a well standardized coding style. You can add additional
         -- languages here or re-enable it for the disabled ones.
         local disable_filetypes = { c = true, cpp = true }
+        local slow_format_filetypes = { markdown = true }
         if disable_filetypes[vim.bo[bufnr].filetype] then
           return nil
         else
+          local timeout_ms = slow_format_filetypes[vim.bo[bufnr].filetype] and 4000 or 1000
           return {
-            timeout_ms = 500,
+            timeout_ms = timeout_ms,
             lsp_format = 'fallback',
           }
         end
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        markdown = { 'prettier' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -861,7 +881,23 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'swift', 'vim', 'vimdoc' },
+      ensure_installed = {
+        'bash',
+        'c',
+        'diff',
+        'html',
+        'latex',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'matlab',
+        'query',
+        'swift',
+        'vim',
+        'vimdoc',
+        'yaml',
+      },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
